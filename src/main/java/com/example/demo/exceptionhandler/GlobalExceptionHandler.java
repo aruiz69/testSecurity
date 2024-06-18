@@ -20,38 +20,35 @@ public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
-    public ResponseEntity<Object> handleValidationExceptions(
-            Exception ex, WebRequest request) {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex, WebRequest request) {
         Map<String, Object> body = new HashMap<>();
         Map<String, String> errors = new HashMap<>();
 
-        if (ex instanceof MethodArgumentNotValidException exArg) {
 
-            exArg.getBindingResult().getAllErrors().forEach(error -> {
-                String fieldName = ((org.springframework.validation.FieldError) error).getField();
-                String errorMessage = error.getDefaultMessage();
-                errors.put(fieldName, errorMessage);
-            });
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            String fieldName = ((org.springframework.validation.FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
 
-            body.put("timestamp", LocalDateTime.now());
-            body.put("errorId", UUID.randomUUID());
-            body.put("errors", errors);
+        body.put("timestamp", LocalDateTime.now());
+        body.put("errorId", UUID.randomUUID());
+        body.put("errors", errors);
 
-            logger.error("Validation MethodArgumentNotValidException failed: {}", body);
+        logger.error("Validation MethodArgumentNotValidException failed: {}", body);
 
-            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-        } else if ( ex instanceof HttpMessageNotReadableException exHttp) {
-            body.put("timestamp", LocalDateTime.now());
-            body.put("errorId", UUID.randomUUID());
-            body.put("errors", exHttp.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
 
-            logger.error("Validation HttpMessageNotReadableException failed: {}", body);
+    }
 
-            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-        } else {
-
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Object> handleHttpMessageNotReadabl(HttpMessageNotReadableException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("errorId", UUID.randomUUID());
+        body.put("errors", ex.getMessage());
+        logger.error("Validation HttpMessageNotReadableException failed: {}", body);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 }
